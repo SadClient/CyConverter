@@ -1,12 +1,18 @@
 FROM python:3.11-slim
 
-# Sistem araçları kur (tüm derleyiciler + Wine)
+# Sistem güncelleme ve tüm derleyicileri kur
 RUN apt-get update && apt-get install -y \
-    wine wine64 \
+    wget curl git unzip xvfb \
     build-essential g++ mingw-w64 \
-    wget curl git unzip \
     golang-go \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
+
+# Multiarch etkinleştir ve wine32 + wine64 kur
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y wine wine64 wine32:i386 libwine:i386 fonts-wine && \
+    rm -rf /var/lib/apt/lists/*
 
 # Rust kur
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
