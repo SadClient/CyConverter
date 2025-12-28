@@ -6,70 +6,70 @@ import tempfile
 st.set_page_config(page_title="CyConverter4Python 🚀", layout="wide")
 
 st.title("🚀 CyConverter4Python")
-st.markdown("### Python kodunu profesyonel **Windows .exe**'ye çevir — saniyeler içinde, tarayıcıdan!")
+st.markdown("### Convert your Python code to a professional **Windows .exe** — instantly in your browser!")
 
-# Opsiyonel özellikler
+# Optional features
 col1, col2, col3 = st.columns(3)
 with col1:
-    author = st.text_input("Yazar Adı (opsiyonel)", placeholder="Adın veya şirketin")
+    author = st.text_input("Author Name (optional)", placeholder="Your name or company")
 with col2:
-    icon_file = st.file_uploader("Özel İkon (.ico - opsiyonel)", type=["ico"])
+    icon_file = st.file_uploader("Custom Icon (.ico - optional)", type=["ico"])
 with col3:
     requirements_file = st.file_uploader(
-        "requirements.txt (opsiyonel)",
+        "requirements.txt (optional)",
         type=["txt"],
-        help="requests, tkinter, pygame, pandas, selenium gibi paketler kullanıyorsan yükle"
+        help="Upload if you use packages like requests, tkinter, pygame, pandas, selenium, etc."
     )
 
-# Kod girişi
-option = st.radio("Python kodunu nasıl eklemek istersin?", ("Dosya Yükle 📁", "Elle Yaz ✍️"), horizontal=True)
+# Code input
+option = st.radio("How do you want to add your Python code?", ("Upload .py file 📁", "Write manually ✍️"), horizontal=True)
 
 code = None
 filename = "myapp"
 
-if option == "Dosya Yükle 📁":
-    uploaded_file = st.file_uploader("Ana Python dosyanı yükle (.py)", type=["py"])
+if option == "Upload .py file 📁":
+    uploaded_file = st.file_uploader("Upload your main Python file (.py)", type=["py"])
     if uploaded_file is not None:
         filename = os.path.splitext(uploaded_file.name)[0]
         code = uploaded_file.getvalue().decode("utf-8")
-        st.success(f"✅ Dosya yüklendi: **{uploaded_file.name}**")
+        st.success(f"✅ File uploaded: **{uploaded_file.name}**")
         st.code(code, language="python")
 else:
     code = st.text_area(
-        "Kodunu buraya yaz veya yapıştır",
-        value='# Merhaba!\nprint("CyConverter4Python ile EXE oldum! 🚀")\n# requirements.txt ile istediğin paketi ekleyebilirsin',
+        "Paste or write your Python code here",
+        value='# Hello!\nprint("I became an EXE with CyConverter4Python! 🚀")\n# Upload requirements.txt to add any package',
         height=400
     )
 
 if code is None:
-    st.info("👆 Lütfen bir .py dosyası yükle veya kod yaz.")
+    st.info("👆 Please upload a .py file or write your code.")
     st.stop()
 
-if st.button("🚀 EXE Oluştur & İndir", type="primary", use_container_width=True):
-    with st.spinner("EXE oluşturuluyor... 20-60 saniye sürebilir 🔨"):
+if st.button("🚀 Build EXE & Download", type="primary", use_container_width=True):
+    with st.spinner("Building your .exe — this may take 20-60 seconds 🔨"):
         with tempfile.TemporaryDirectory() as temp_dir:
             source_path = os.path.join(temp_dir, f"{filename}.py")
             with open(source_path, "w", encoding="utf-8") as f:
                 f.write(code)
 
             final_author = author.strip() or "CyConverter4Python User"
-            description = "CyConverter4Python ile oluşturuldu"
+            description = "Created with CyConverter4Python"
             copyright_text = f"© 2025 {final_author}"
 
-            # requirements.txt varsa kur
+            # Install packages if requirements.txt uploaded
             if requirements_file:
                 req_path = os.path.join(temp_dir, "requirements.txt")
                 with open(req_path, "wb") as f:
                     f.write(requirements_file.getvalue())
-                st.info("📦 Paketler yükleniyor...")
+                st.info("📦 Installing packages from requirements.txt...")
                 install_result = subprocess.run(["pip", "install", "-r", req_path], capture_output=True, text=True, timeout=180)
                 if install_result.returncode != 0:
-                    st.error("Bazı paketler yüklenemedi:")
+                    st.error("Some packages failed to install:")
                     st.code(install_result.stderr)
                     st.stop()
-                st.success("✅ Tüm paketler yüklendi!")
+                st.success("✅ All packages installed successfully!")
 
-            # PyInstaller komutu
+            # PyInstaller command
             pyi_args = [
                 "pyinstaller", "--onefile", "--noconsole",
                 "--name", filename,
@@ -77,14 +77,14 @@ if st.button("🚀 EXE Oluştur & İndir", type="primary", use_container_width=T
                 source_path
             ]
 
-            # İkon ekle
+            # Add icon if provided
             if icon_file:
                 icon_path = os.path.join(temp_dir, "icon.ico")
                 with open(icon_path, "wb") as f:
                     f.write(icon_file.getvalue())
                 pyi_args += ["--icon", icon_path]
 
-            # Metadata ekle
+            # Add metadata
             version_file = os.path.join(temp_dir, "version_info.txt")
             version_content = f'''# UTF-8
 VSVersionInfo(
@@ -112,12 +112,12 @@ VSVersionInfo(
             if os.path.exists(exe_path):
                 with open(exe_path, "rb") as f:
                     exe_data = f.read()
-                st.success("✅ EXE başarıyla oluşturuldu!")
-                st.markdown(f"**Dosya adı:** `{filename}.exe` | **Yazar:** `{final_author}`")
+                st.success("✅ Your .exe has been successfully built!")
+                st.markdown(f"**Filename:** `{filename}.exe` | **Author:** `{final_author}`")
                 if requirements_file:
-                    st.info("📦 Tüm paketlerin EXE içinde!")
+                    st.info("📦 All your packages are bundled inside the EXE!")
                 st.download_button(
-                    "📥 EXE Dosyasını İndir",
+                    "📥 Download Your EXE File",
                     exe_data,
                     file_name=f"{filename}.exe",
                     mime="application/octet-stream",
@@ -126,7 +126,7 @@ VSVersionInfo(
                 )
                 st.balloons()
             else:
-                st.error("❌ Oluşturma hatası")
-                st.code(result.stderr or "Bilinmeyen hata")
+                st.error("❌ Build failed")
+                st.code(result.stderr or "Unknown error occurred")
 
 st.caption("Made with ❤️ by Sad_Always — An AlexisHQ project | Python → Professional EXE")
