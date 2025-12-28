@@ -36,7 +36,7 @@ if option == "Upload File 📁":
         st.code(code, language=language.lower() if language != "C#" else "csharp")
 else:
     default_codes = {
-        "Python": 'print("Hello from CyConverter! 🚀")',
+        "Python": 'print("Hello from CyConverter! 🚀")\nprint("This is a real Windows EXE!")',
         "C++": '#include <iostream>\nint main() {\n    std::cout << "Hello from CyConverter! 🚀" << std::endl;\n    return 0;\n}',
         "C#": 'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from CyConverter! 🚀");\n    }\n}',
         "Go": 'package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello from CyConverter! 🚀")\n}',
@@ -56,13 +56,14 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                 f.write(code)
 
             final_author = author.strip() or "CyConverter User"
-            exe_path = os.path.join(temp_dir, f"{filename}.exe")
             success = False
             error_msg = ""
+            exe_data = None
+            final_exe_path = None
 
             try:
                 if language == "Python":
-                    # Wine ile gerçek Windows PyInstaller çalıştır
+                    # Wine ile gerçek Windows PyInstaller
                     pyi_args = ["wine", "pyinstaller", "--onefile", "--noconsole", "--distpath", temp_dir, source_path]
                     if icon_file:
                         icon_path = os.path.join(temp_dir, "icon.ico")
@@ -72,6 +73,7 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                     result = subprocess.run(pyi_args, capture_output=True, text=True, timeout=400)
 
                 elif language == "C++":
+                    exe_path = os.path.join(temp_dir, f"{filename}.exe")
                     result = subprocess.run([
                         "x86_64-w64-mingw32-g++", source_path, "-o", exe_path, "-static"
                     ], capture_output=True, text=True, timeout=60)
@@ -79,33 +81,16 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                 elif language == "C#":
                     proj_dir = os.path.join(temp_dir, "csproj")
                     os.makedirs(proj_dir, exist_ok=True)
-                    csproj_content = f'''<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishTrimmed>true</PublishTrimmed>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-  </PropertyGroup>
-</Project>'''
+                    csproj_content = '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net8.0</TargetFramework>\n    <RuntimeIdentifier>win-x64</RuntimeIdentifier>\n    <SelfContained>true</SelfContained>\n    <PublishSingleFile>true</PublishSingleFile>\n    <PublishTrimmed>true</PublishTrimmed>\n  </PropertyGroup>\n</Project>'
                     with open(os.path.join(proj_dir, f"{filename}.csproj"), "w") as f:
                         f.write(csproj_content)
                     shutil.copy(source_path, os.path.join(proj_dir, f"{filename}.cs"))
-                    if icon_file:
-                        icon_dest = os.path.join(proj_dir, "icon.ico")
-                        with open(icon_dest, "wb") as f:
-                            f.write(icon_file.getvalue())
-                        # .csproj'a icon ekle
-                        csproj_content = csproj_content.replace("</Project>", f"  <ItemGroup>\n    <None Include=\"icon.ico\" />\n  </ItemGroup>\n  <PropertyGroup>\n    <ApplicationIcon>icon.ico</ApplicationIcon>\n  </PropertyGroup>\n</Project>")
-                        with open(os.path.join(proj_dir, f"{filename}.csproj"), "w") as f:
-                            f.write(csproj_content)
                     result = subprocess.run([
                         "dotnet", "publish", "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-o", temp_dir
                     ], cwd=proj_dir, capture_output=True, text=True, timeout=180)
 
                 elif language == "Go":
+                    exe_path = os.path.join(temp_dir, f"{filename}.exe")
                     env = {**os.environ, "GOOS": "windows", "GOARCH": "amd64"}
                     result = subprocess.run([
                         "go", "build", "-o", exe_path, "-ldflags", "-s -w -H=windowsgui", source_path
@@ -123,20 +108,32 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                     ], cwd=temp_dir, capture_output=True, text=True, timeout=240)
                     exe_path = os.path.join(temp_dir, "target", "x86_64-pc-windows-gnu", "release", f"{filename}.exe")
 
-                # EXE var mı kontrol et
-                if os.path.exists(exe_path):
-                    success = True
-                else:
-                    error_msg = result.stderr if 'result' in locals() else "No .exe generated"
+                # EXE'yi çeşitli olası konumlarda ara
+                possible_paths = [
+                    os.path.join(temp_dir, "dist", f"{filename}.exe"),
+                    os.path.join(temp_dir, "dist", filename),
+                    os.path.join(temp_dir, f"{filename}.exe"),
+                    os.path.join(temp_dir, filename),
+                    exe_path if 'exe_path' in locals() else None
+                ]
+
+                for p in possible_paths:
+                    if p and os.path.exists(p):
+                        final_exe_path = p
+                        with open(p, "rb") as f:
+                            exe_data = f.read()
+                        success = True
+                        break
+
+                if not success:
+                    error_msg = result.stderr if 'result' in locals() else "No executable found"
 
             except Exception as e:
                 error_msg = str(e)
 
             if success:
-                with open(exe_path, "rb") as f:
-                    exe_data = f.read()
                 st.success("✅ Real Windows .exe built successfully!")
-                st.markdown(f"**Language:** {language} | **Filename:** `{filename}.exe` | **Author:** `{final_author}`")
+                st.markdown(f"**Language:** {language} | **Filename:** `{os.path.basename(final_exe_path)}` | **Author:** `{final_author}`")
                 st.download_button(
                     "📥 Download Windows EXE",
                     exe_data,
@@ -151,4 +148,4 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                 if error_msg:
                     st.code(error_msg, language="text")
 
-st.caption("Made with ❤️ by Sad_Always — An AlexisHQ project | Multi-language → Windows EXE")
+st.caption("Made with ❤️ by Sad_Always — An AlexisHQ project | Multi-language → Real Windows EXE")
