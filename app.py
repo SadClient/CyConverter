@@ -82,10 +82,7 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                     with open(os.path.join(proj_dir, f"{filename}.csproj"), "w") as f:
                         f.write(csproj)
                     shutil.copy(source_path, os.path.join(proj_dir, f"{filename}.cs"))
-                    if icon_file:
-                        shutil.copyfileobj(icon_file, open(os.path.join(proj_dir, "app.ico"), "wb"))
                     result = subprocess.run(["dotnet", "publish", "-c", "Release", "-o", temp_dir], cwd=proj_dir, capture_output=True, text=True, timeout=180)
-                    exe_path = os.path.join(temp_dir, f"{filename}.exe")
 
                 elif language == "Go":
                     env = {**os.environ, "GOOS": "windows", "GOARCH": "amd64"}
