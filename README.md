@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)
 ![Status](https://img.shields.io/badge/Status-Live-success)
 
-**CyConverter** is a web application that instantly converts your source code into a standalone **Windows .exe** file.
+**CyConverter** is a web application that instantly converts your source code into a professional **Windows .exe** file.
 
 Just upload your code file or paste it, choose the language →
 ✨ **A brand new executable is generated and ready to download in seconds.**
@@ -25,13 +25,14 @@ Supported languages: Python • C++ • C# • Go • Rust
 ---
 ## ✨ Features
 - 📁 **File upload** or manual code pasting
-- 🐍 Python → Single-file EXE (PyInstaller --onefile --noconsole)
-- ⚡ C++ → Static compiled binary (g++)
+- 🎨 Optional **custom icon** (.ico) and **author name** for your EXE
+- 📋 Professional metadata embedded (Properties → Details shows author, description, copyright)
+- 🐍 Python → Clean single-file EXE (no console window)
+- ⚡ C++ → Static compiled binary
 - 🖥️ C# → .NET 8 self-contained single-file
 - 🐹 Go → Optimized Windows GUI binary
 - 🦀 Rust → Cargo release build for Windows
-- 🌐 No installation required — **runs in the browser**
-- ⚡ Super fast and clean Streamlit interface
+- 🌐 Runs directly in your browser — super fast and easy to use
 ---
 ## 🛠️ Tech Stack
 - **Python** — Core language
@@ -41,13 +42,11 @@ Supported languages: Python • C++ • C# • Go • Rust
 ## 📸 Site Screenshot
 ![CyConverter Screenshot](https://raw.githubusercontent.com/Sad_Always/cyconverter/main/screenshot.png)
 ---
-## ⚠️ Important Disclaimer
-- This app should be run **locally or on your own server** for full language support
-- Free Streamlit Cloud has limited toolchains (g++, Go, Rust, .NET may not be available)
-- Only compile code **you trust**
-- The generated .exe files are created from user-provided code
-- **The developer is not responsible** for any data loss, security issues, malware, or problems arising from compiled executables
-**Use at your own risk.**
+## ⚠️ Quick Note
+- Only compile code **you trust**.
+- Generated .exe files are created from your input.
+- Use at your own risk.
+
 ---
 ## 📄 License
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
@@ -57,7 +56,7 @@ You are free to:
 - Use it in commercial projects
 - Do whatever you want!
 
-Just keep the original copyright notice in the files.
+Just keep the original copyright notice.
 
 ---
 ## 👨‍💻 Author
