@@ -4,31 +4,33 @@ import os
 import shutil
 import tempfile
 
-st.set_page_config(page_title="Code to EXE 🚀", layout="centered")
+st.set_page_config(page_title="CyConverter 🚀", layout="wide")
 
-st.title("🚀 Code to EXE Converter")
-st.markdown("Upload or write code in **Python • C++ • C# • Go • Rust** and get a standalone **Windows .exe** file in seconds!")
+st.title("🚀 CyConverter")
+st.markdown("### Turn your code into a professional **Windows .exe** in seconds — directly in your browser!")
 
-# Option: Upload file or write manually
-option = st.radio("How do you want to add your code?", ("Upload File 📁", "Write Manually ✍️"))
+# Optional inputs: Author & Icon
+col1, col2 = st.columns(2)
+with col1:
+    author = st.text_input("Author Name (optional)", placeholder="e.g. Your Name or Company")
+with col2:
+    icon_file = st.file_uploader("Custom Icon (.ico - optional)", type=["ico"], help="Upload a .ico file to embed in your EXE")
 
-supported_ext = {
-    ".py": "Python",
-    ".cpp": "C++",
-    ".cs": "C#",
-    ".go": "Go",
-    ".rs": "Rust"
-}
+# Code input method
+option = st.radio("How do you want to add your code?", ("Upload File 📁", "Write Manually ✍️"), horizontal=True)
+
+supported_ext = {".py": "Python", ".cpp": "C++", ".cs": "C#", ".go": "Go", ".rs": "Rust"}
 
 code = None
 language = None
-filename = "main"
+filename = "app"  # Default filename
 file_ext = ""
 
 if option == "Upload File 📁":
     uploaded_file = st.file_uploader(
-        "Drag & drop or select your source file (.py, .cpp, .cs, .go, .rs)",
-        type=["py", "cpp", "cs", "go", "rs"]
+        "Drag & drop your source file",
+        type=["py", "cpp", "cs", "go", "rs"],
+        help="Supported: .py, .cpp, .cs, .go, .rs"
     )
     if uploaded_file is not None:
         file_ext = os.path.splitext(uploaded_file.name)[1].lower()
@@ -36,7 +38,7 @@ if option == "Upload File 📁":
             language = supported_ext[file_ext]
             filename = os.path.splitext(uploaded_file.name)[0]
             code = uploaded_file.getvalue().decode("utf-8")
-            st.success(f"✅ {language} file uploaded: **{uploaded_file.name}**")
+            st.success(f"✅ {language} file loaded: **{uploaded_file.name}**")
             st.code(code, language=language.lower() if language != "C#" else "csharp")
         else:
             st.error("❌ Unsupported file type!")
@@ -46,48 +48,90 @@ else:
     file_ext = {"Python": ".py", "C++": ".cpp", "C#": ".cs", "Go": ".go", "Rust": ".rs"}[language]
 
     default_codes = {
-        "Python": 'print("Hello World! 🚀")',
-        "C++": '#include <iostream>\nint main() {\n    std::cout << "Hello World! 🚀" << std::endl;\n    return 0;\n}',
-        "C#": 'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello World! 🚀");\n    }\n}',
-        "Go": 'package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello World! 🚀")\n}',
-        "Rust": 'fn main() {\n    println!("Hello World! 🚀");\n}'
+        "Python": 'print("Hello from CyConverter! 🚀")',
+        "C++": '#include <iostream>\nint main() {\n    std::cout << "Hello from CyConverter! 🚀" << std::endl;\n    return 0;\n}',
+        "C#": 'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from CyConverter! 🚀");\n    }\n}',
+        "Go": 'package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello from CyConverter! 🚀")\n}',
+        "Rust": 'fn main() {\n    println!("Hello from CyConverter! 🚀");\n}'
     }
     code = st.text_area("Paste your code here", value=default_codes[language], height=400)
 
 if code is None or language is None:
-    st.info("👆 Please upload a file or select a language and write code.")
+    st.info("👆 Please upload a file or write code and select a language.")
     st.stop()
 
-if st.button("🚀 Build EXE & Download", type="primary"):
-    with st.spinner(f"Compiling {language} code... This may take a moment 🔨"):
+# Build button
+if st.button("🚀 Build EXE & Download", type="primary", use_container_width=True):
+    with st.spinner(f"Building {language} → .exe ... This may take 10-60 seconds 🔨"):
         with tempfile.TemporaryDirectory() as temp_dir:
             source_path = os.path.join(temp_dir, f"{filename}{file_ext}")
             with open(source_path, "w", encoding="utf-8") as f:
                 f.write(code)
 
+            # Metadata setup
+            final_author = author.strip() or "CyConverter User"
+            description = f"Compiled from {language} using CyConverter"
+            product_name = filename
+            copyright_text = f"© 2025 {final_author}"
+
             exe_path = None
-            error_msg = ""
             success = False
+            error_msg = ""
 
             try:
                 if language == "Python":
-                    result = subprocess.run([
+                    pyi_args = [
                         "pyinstaller", "--onefile", "--noconsole",
-                        "--distpath", temp_dir, source_path
-                    ], capture_output=True, timeout=120)
+                        "--name", filename,
+                        "--distpath", temp_dir,
+                        source_path
+                    ]
+
+                    # Add icon if provided
+                    if icon_file:
+                        icon_path = os.path.join(temp_dir, "app.ico")
+                        with open(icon_path, "wb") as f:
+                            f.write(icon_file.getvalue())
+                        pyi_args += ["--icon", icon_path]
+
+                    # Add version info (metadata)
+                    version_file = os.path.join(temp_dir, "file_version_info.txt")
+                    version_content = f'''# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'{final_author}'),
+         StringStruct(u'FileDescription', u'{description}'),
+         StringStruct(u'LegalCopyright', u'{copyright_text}'),
+         StringStruct(u'ProductName', u'{product_name}'),
+         StringStruct(u'OriginalFilename', u'{filename}.exe')])
+    ]), 
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)'''
+                    with open(version_file, "w", encoding="utf-8") as f:
+                        f.write(version_content)
+                    pyi_args += ["--version-file", version_file]
+
+                    result = subprocess.run(pyi_args, capture_output=True, text=True, timeout=180)
+
                     exe_path = os.path.join(temp_dir, f"{filename}.exe")
 
                 elif language == "C++":
                     exe_path = os.path.join(temp_dir, f"{filename}.exe")
-                    result = subprocess.run([
-                        "g++", source_path, "-o", exe_path, "-static-libgcc", "-static-libstdc++"
-                    ], capture_output=True, timeout=60)
+                    cmd = ["g++", source_path, "-o", exe_path, "-static-libgcc", "-static-libstdc++"]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
                 elif language == "C#":
                     proj_dir = os.path.join(temp_dir, "csproj")
-                    os.makedirs(proj_dir)
-                    csproj = f'''
-<Project Sdk="Microsoft.NET.Sdk">
+                    os.makedirs(proj_dir, exist_ok=True)
+                    csproj_content = f'''<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -95,64 +139,73 @@ if st.button("🚀 Build EXE & Download", type="primary"):
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>true</PublishTrimmed>
+    <ApplicationIcon>{'app.ico' if icon_file else ''}</ApplicationIcon>
   </PropertyGroup>
 </Project>'''
                     with open(os.path.join(proj_dir, f"{filename}.csproj"), "w") as f:
-                        f.write(csproj)
+                        f.write(csproj_content)
                     shutil.copy(source_path, os.path.join(proj_dir, f"{filename}.cs"))
-                    result = subprocess.run([
-                        "dotnet", "publish", "-c", "Release", "-o", temp_dir
-                    ], cwd=proj_dir, capture_output=True, timeout=120)
+                    if icon_file:
+                        with open(os.path.join(proj_dir, "app.ico"), "wb") as f:
+                            f.write(icon_file.getvalue())
+                    result = subprocess.run(["dotnet", "publish", "-c", "Release", "-o", temp_dir], cwd=proj_dir, capture_output=True, text=True, timeout=180)
                     exe_path = os.path.join(temp_dir, f"{filename}.exe")
 
                 elif language == "Go":
                     exe_path = os.path.join(temp_dir, f"{filename}.exe")
                     env = {**os.environ, "GOOS": "windows", "GOARCH": "amd64"}
-                    result = subprocess.run([
-                        "go", "build", "-o", exe_path,
-                        "-ldflags", "-s -w -H=windowsgui", source_path
-                    ], env=env, capture_output=True, timeout=60)
+                    cmd = ["go", "build", "-o", exe_path, "-ldflags", "-s -w -H=windowsgui", source_path]
+                    result = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=90)
 
                 elif language == "Rust":
-                    cargo_toml = '''
-[package]
-name = "app"
+                    cargo_toml = f'''[package]
+name = "{filename}"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "app"
-path = "main.rs"
+name = "{filename}"
+path = "src/main.rs"
+
+[profile.release]
+strip = true
+lto = true
 '''
-                    os.makedirs(os.path.join(temp_dir, "src"), exist_ok=True)
+                    src_dir = os.path.join(temp_dir, "src")
+                    os.makedirs(src_dir, exist_ok=True)
                     with open(os.path.join(temp_dir, "Cargo.toml"), "w") as f:
                         f.write(cargo_toml)
-                    shutil.move(source_path, os.path.join(temp_dir, "src", "main.rs"))
+                    shutil.move(source_path, os.path.join(src_dir, "main.rs"))
                     result = subprocess.run([
                         "cargo", "build", "--release", "--target", "x86_64-pc-windows-gnu"
-                    ], cwd=temp_dir, capture_output=True, timeout=180)
+                    ], cwd=temp_dir, capture_output=True, text=True, timeout=240)
                     exe_path = os.path.join(temp_dir, "target", "x86_64-pc-windows-gnu", "release", f"{filename}.exe")
 
                 if os.path.exists(exe_path):
                     success = True
                 else:
-                    error_msg = result.stderr.decode("utf-8", errors="replace") if result else "Unknown error"
+                    error_msg = result.stderr if result else "Unknown build error"
 
+            except subprocess.TimeoutExpired:
+                error_msg = "Build timed out (took too long)."
             except Exception as e:
                 error_msg = str(e)
 
-            if success:
+            if success and os.path.exists(exe_path):
                 with open(exe_path, "rb") as f:
                     exe_data = f.read()
-                st.success("✅ EXE built successfully!")
+                st.success("✅ Professional .exe built successfully!")
+                st.markdown(f"**Filename:** `{filename}.exe`  |  **Author:** `{final_author}`")
                 st.download_button(
-                    "📥 Download EXE File",
-                    exe_data,
+                    label="📥 Download Your EXE",
+                    data=exe_data,
                     file_name=f"{filename}.exe",
                     mime="application/octet-stream",
-                    type="primary"
+                    type="primary",
+                    use_container_width=True
                 )
                 st.balloons()
             else:
-                st.error("❌ Build failed:")
-                st.code(error_msg or "An unknown error occurred.", language="text")
+                st.error("❌ Build failed")
+                if error_msg:
+                    st.code(error_msg, language="text")
