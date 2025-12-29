@@ -36,11 +36,11 @@ if option == "Upload File 📁":
         st.code(code, language=language.lower() if language != "C#" else "csharp")
 else:
     default_codes = {
-        "Python": 'print("Hello from CyConverter! 🚀")\nprint("Real Windows EXE!")',
-        "C++": '#include <iostream>\nint main() {\n    std::cout << "Hello from CyConverter! 🚀" << std::endl;\n    return 0;\n}',
-        "C#": 'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from CyConverter! 🚀");\n    }\n}',
-        "Go": 'package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello from CyConverter! 🚀")\n}',
-        "Rust": 'fn main() {\n    println!("Hello from CyConverter! 🚀");\n}'
+        "Python": 'print("CyConverter gerçek Windows EXE üretiyor! 🚀")\ninput("Çıkmak için Enter...")',
+        "C++": '#include <iostream>\nint main() {\n    std::cout << "Hello from CyConverter! 🚀" << std::endl;\n    system("pause");\n    return 0;\n}',
+        "C#": 'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from CyConverter! 🚀");\n        Console.ReadKey();\n    }\n}',
+        "Go": 'package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello from CyConverter! 🚀")\n    fmt.Println("Press Enter to exit...")\n    fmt.Scanln()\n}',
+        "Rust": 'use std::io;\nfn main() {\n    println!("Hello from CyConverter! 🚀");\n    println!("Press Enter to exit...");\n    let mut input = String::new();\n    io::stdin().read_line(&mut input).unwrap();\n}'
     }
     code = st.text_area("Paste your code here", value=default_codes[language], height=400)
 
@@ -57,12 +57,10 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
 
             final_author = author.strip() or "CyConverter User"
             success = False
-            error_msg = ""
             exe_data = None
             final_exe_path = None
 
             try:
-                exe_path = os.path.join(temp_dir, f"{filename}.exe")
                 if language == "Python":
                     pyi_args = ["wine", "pyinstaller", "--onefile", "--noconsole", "--distpath", temp_dir, source_path]
                     if icon_file:
@@ -73,6 +71,7 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                     result = subprocess.run(pyi_args, capture_output=True, text=True, timeout=400)
 
                 elif language == "C++":
+                    exe_path = os.path.join(temp_dir, f"{filename}.exe")
                     result = subprocess.run([
                         "x86_64-w64-mingw32-g++", source_path, "-o", exe_path, "-static"
                     ], capture_output=True, text=True, timeout=60)
@@ -107,13 +106,15 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                     ], cwd=temp_dir, capture_output=True, text=True, timeout=240)
                     exe_path = os.path.join(temp_dir, "target", "x86_64-pc-windows-gnu", "release", f"{filename}.exe")
 
-                # EXE'yi her olası konumdan ara (Wine/PyInstaller farklı yerlere koyabiliyor)
+                # .exe'yi agresif şekilde ara (Wine + PyInstaller'ın koyduğu yerler)
                 possible_paths = [
                     os.path.join(temp_dir, "dist", f"{filename}.exe"),
                     os.path.join(temp_dir, "dist", filename),
                     os.path.join(temp_dir, f"{filename}.exe"),
                     os.path.join(temp_dir, filename),
-                    exe_path if 'exe_path' in locals() else None
+                    exe_path if 'exe_path' in locals() else None,
+                    os.path.join(temp_dir, "dist", "app.exe"),
+                    os.path.join(temp_dir, "dist", "app")
                 ]
 
                 for p in possible_paths:
@@ -125,10 +126,17 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                         break
 
                 if not success:
-                    error_msg = result.stderr if 'result' in locals() else "No executable found"
+                    # Temp dizindeki tüm dosyaları listele (debug için)
+                    all_files = []
+                    for root, dirs, files in os.walk(temp_dir):
+                        for file in files:
+                            all_files.append(os.path.join(root, file))
+                    st.warning("EXE not found in expected locations. Files in temp_dir:")
+                    st.code("\n".join(all_files))
 
             except Exception as e:
-                error_msg = str(e)
+                st.error("Exception during build")
+                st.code(str(e))
 
             if success:
                 st.success("✅ Real Windows .exe built successfully!")
@@ -144,7 +152,6 @@ if st.button("🚀 Build Windows EXE & Download", type="primary", use_container_
                 st.balloons()
             else:
                 st.error("❌ Build failed")
-                if error_msg:
-                    st.code(error_msg, language="text")
+                st.code(result.stderr if 'result' in locals() else "Unknown error")
 
 st.caption("Made with ❤️ by Sad_Always — An AlexisHQ project | Multi-language → Real Windows EXE")
